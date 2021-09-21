@@ -127,6 +127,7 @@ impl CommandPrettyPrinter {
             offset += desc.len;
         }
 
+        // consider extracting to a function
         let enabled_joined = fields_enabled.join(" ");
         let disabled_joined = fields_disabled.join(" ");
         let pair = vec![enabled_joined, disabled_joined];
