@@ -3,8 +3,12 @@ use core::fmt::LowerHex;
 use alloc::{format, vec};
 use alloc::{string::String, vec::Vec};
 
+use crate::config_space::command::CommandPrettyPrinter;
+use crate::config_space::CommandRegister;
+
 enum FieldKind {
     BitField,
+    CommandRegister,
     AddressField,
     IntField,
     IdField,
@@ -30,7 +34,7 @@ const HeaderType00: [FieldDescriptor; 12] = [
     FieldDescriptor {
         len: 2,
         name: "command",
-        kind: FieldKind::BitField,
+        kind: FieldKind::CommandRegister,
     },
     FieldDescriptor {
         len: 2,
@@ -158,9 +162,9 @@ impl From<Vec<u8>> for ConfigSpace {
     }
 }
 
-pub struct PrettyPrinter {}
+pub struct ConfigSpacePrettyPrinter {}
 
-impl PrettyPrinter {
+impl ConfigSpacePrettyPrinter {
     pub fn new() -> Self {
         Self {}
     }
@@ -175,8 +179,31 @@ impl PrettyPrinter {
         (val[3] as u32) << 24 | (val[0] as u32)
     }
 
-    fn print_value<T: LowerHex>(&self, desc: &FieldDescriptor, value: T) -> String {
-        format!("0x{:x}", value)
+    fn print_value(&self, desc: &FieldDescriptor, slice: &[u8]) -> String {
+        match desc.kind {
+            FieldKind::CommandRegister => {
+                let value = self.assemble_u16(slice);
+                let reg = CommandRegister::from(value as u16);
+                let printer = CommandPrettyPrinter::new();
+                let flags = printer.print(&reg);
+                format!("{} [0x{:04x}]", flags, value)
+            }
+            _ => match desc.len {
+                1 => {
+                    let value = slice[0];
+                    format!("0x{:02x}", value)
+                }
+                2 => {
+                    let value = self.assemble_u16(slice);
+                    format!("0x{:04x}", value)
+                }
+                4 => {
+                    let value = self.assemble_u32(slice);
+                    format!("0x{:08x}", value)
+                }
+                _ => format!(""),
+            },
+        }
     }
 
     pub fn print(&self, cf: &ConfigSpace) -> String {
@@ -188,21 +215,7 @@ impl PrettyPrinter {
             let high = offset + desc.len;
             let slice = &cf.slice[low..high];
 
-            let value_fmt = match desc.len {
-                1 => {
-                    let val = slice[0];
-                    self.print_value(&desc, val)
-                }
-                2 => {
-                    let val = self.assemble_u16(slice);
-                    self.print_value(&desc, val)
-                }
-                4 => {
-                    let val = self.assemble_u32(slice);
-                    self.print_value(&desc, val)
-                }
-                _ => format!(""),
-            };
+            let value_fmt = self.print_value(&desc, slice);
 
             let line = format!("{:<20}: {}\n", desc.name, value_fmt);
             lines.push(line);

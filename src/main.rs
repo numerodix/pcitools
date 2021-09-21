@@ -5,7 +5,7 @@ use std::u8;
 
 use lspci::Address;
 use lspci::ConfigSpace;
-use lspci::PrettyPrinter;
+use lspci::ConfigSpacePrettyPrinter;
 
 struct Scanner {
     root_dir: String,
@@ -70,7 +70,7 @@ fn main() {
     let scanner = Scanner::new(root_dir);
     let addresses = scanner.scan();
 
-    let printer = PrettyPrinter::new();
+    let printer = ConfigSpacePrettyPrinter::new();
 
     for address in addresses {
         println!(
