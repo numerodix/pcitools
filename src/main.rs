@@ -1,72 +1,11 @@
+use std::fmt;
 use std::fs;
 use std::path;
 use std::u8;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Address {
-    // 256 possible buses - fits in 1 byte
-    bus: u8,
-
-    // 32 possible devices on a bus - fits in 5 bits
-    device: u8,
-
-    // 8 possible functions of a device - fits in 3 bits
-    function: u8,
-}
-
-impl Address {
-    pub fn new(bus: u8, device: u8, function: u8) -> Self {
-        Self {
-            bus,
-            device,
-            function,
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[repr(packed)]
-pub struct ConfigSpace {
-    vendor_id: u16,
-    device_id: u16,
-    command: u16,
-    status: u16,
-    revision: u8,
-    class_code1: u8,
-    class_code2: u16,
-    cache_line: u8,
-    latency_timer: u8,
-    header_type: u8,
-    bist: u8,
-    base_addr_0: u32,
-    base_addr_1: u32,
-    base_addr_2: u32,
-    base_addr_3: u32,
-    base_addr_4: u32,
-    base_addr_5: u32,
-    cardbus_cis_pointer: u32,
-    subsystem_vendor_id: u16,
-    subsystem_device_id: u16,
-    expansion_rom_base_addr: u32,
-    reserved1: u64,
-    irq_line: u8,
-    irq_pin: u8,
-    min_grant: u8,
-    max_latency: u8,
-}
-
-impl ConfigSpace {}
-
-impl From<Vec<u8>> for ConfigSpace {
-    fn from(bytes: Vec<u8>) -> Self {
-        assert!(bytes.len() >= 64);
-
-        let ptr = bytes.as_ptr() as *const ConfigSpace;
-        let reference: &ConfigSpace = unsafe { &*ptr };
-
-        reference.clone()
-    }
-}
+use lspci::Address;
+use lspci::ConfigSpace;
+use lspci::PrettyPrinter;
 
 struct Scanner {
     root_dir: String,
@@ -131,12 +70,20 @@ fn main() {
     let scanner = Scanner::new(root_dir);
     let addresses = scanner.scan();
 
+    let printer = PrettyPrinter::new();
+
     for address in addresses {
-        print!(
+        println!(
             "{:02x}:{:02x}.{:x} ",
             address.bus, address.device, address.function
         );
+
         let conf = scanner.load_space(&address);
-        println!("{:?}", conf);
+
+        let block = printer.print(&conf);
+        let lines = block.split("\n");
+        for line in lines {
+            println!("  {}", line);
+        }
     }
 }
