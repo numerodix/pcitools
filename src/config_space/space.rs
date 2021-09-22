@@ -1,5 +1,3 @@
-use core::fmt::LowerHex;
-
 use alloc::{format, vec};
 use alloc::{string::String, vec::Vec};
 
