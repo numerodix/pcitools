@@ -1,4 +1,5 @@
 mod command;
+mod devices;
 mod header_type;
 mod shared;
 mod space;

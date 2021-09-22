@@ -4,13 +4,16 @@ use alloc::{format, vec};
 use alloc::{string::String, vec::Vec};
 
 use crate::config_space::command::CommandPrettyPrinter;
+use crate::config_space::devices::DEVICE_MAP;
 use crate::config_space::header_type::{HeaderTypePrettyPrinter, HeaderTypeRegister};
 use crate::config_space::status::{StatusPrettyPrinter, StatusRegister};
-use crate::config_space::CommandRegister;
 use crate::config_space::vendors::VENDOR_MAP;
+use crate::config_space::CommandRegister;
 
+#[derive(PartialEq, Eq)]
 enum FieldKind {
     VendorField,
+    DeviceField,
     BitField,
     CommandRegister,
     StatusRegister,
@@ -26,7 +29,7 @@ struct FieldDescriptor {
     kind: FieldKind,
 }
 
-const HeaderType00: [FieldDescriptor; 12] = [
+const HEADER_TYPE_00: [FieldDescriptor; 12] = [
     FieldDescriptor {
         len: 2,
         name: "vendor_id",
@@ -35,7 +38,7 @@ const HeaderType00: [FieldDescriptor; 12] = [
     FieldDescriptor {
         len: 2,
         name: "device_id",
-        kind: FieldKind::IdField,
+        kind: FieldKind::DeviceField,
     },
     FieldDescriptor {
         len: 2,
@@ -185,11 +188,19 @@ impl ConfigSpacePrettyPrinter {
         (val[3] as u32) << 24 | (val[0] as u32)
     }
 
-    fn print_value(&self, desc: &FieldDescriptor, slice: &[u8]) -> String {
+    fn print_value(&self, desc: &FieldDescriptor, slice: &[u8], vendor_id: u16) -> String {
         match desc.kind {
             FieldKind::VendorField => {
                 let id = self.assemble_u16(slice);
                 let name = VENDOR_MAP.get(&id);
+                match name {
+                    Some(name) => format!("{} [0x{:04x}]", name, id),
+                    None => format!("0x{:04x}", id),
+                }
+            }
+            FieldKind::DeviceField => {
+                let id = self.assemble_u16(slice);
+                let name = DEVICE_MAP.get(&(vendor_id, id));
                 match name {
                     Some(name) => format!("{} [0x{:04x}]", name, id),
                     None => format!("0x{:04x}", id),
@@ -237,13 +248,18 @@ impl ConfigSpacePrettyPrinter {
     pub fn print(&self, cf: &ConfigSpace) -> String {
         let mut offset = 0;
         let mut lines: Vec<String> = vec![];
+        let mut vendor_id = 0;
 
-        for desc in HeaderType00 {
+        for desc in HEADER_TYPE_00 {
             let low = offset;
             let high = offset + desc.len;
             let slice = &cf.slice[low..high];
 
-            let value_fmt = self.print_value(&desc, slice);
+            if desc.kind == FieldKind::VendorField {
+                vendor_id = self.assemble_u16(slice);
+            }
+
+            let value_fmt = self.print_value(&desc, slice, vendor_id);
 
             let line = format!("{:<20}: {}\n", desc.name, value_fmt);
             lines.push(line);
