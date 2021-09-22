@@ -192,7 +192,7 @@ impl ConfigSpacePrettyPrinter {
                 let name = VENDOR_MAP.get(&id);
                 match name {
                     Some(name) => format!("{} [0x{:04x}]", name, id),
-                    None => format!("[0x{:04x}]", id),
+                    None => format!("0x{:04x}", id),
                 }
             }
             FieldKind::CommandRegister => {
