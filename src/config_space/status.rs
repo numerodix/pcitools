@@ -5,101 +5,109 @@ use crate::config_space::shared::format_flags_line;
 
 use super::shared::BitVecFieldDescriptor;
 
-const COMMAND_FIELDS: [BitVecFieldDescriptor; 12] = [
-    // I/O Space
+const STATUS_FIELDS: [BitVecFieldDescriptor; 13] = [
     BitVecFieldDescriptor {
-        len: 1,
-        name: "I/O",
-        is_reserved: false,
-    },
-    // Memory Space
-    BitVecFieldDescriptor {
-        len: 1,
-        name: "Mem",
-        is_reserved: false,
-    },
-    BitVecFieldDescriptor {
-        len: 1,
-        name: "BusMaster",
-        is_reserved: false,
-    },
-    // Special Cycles
-    BitVecFieldDescriptor {
-        len: 1,
-        name: "SpecCycle",
-        is_reserved: false,
-    },
-    // Memory Write and Invalidate Enable
-    BitVecFieldDescriptor {
-        len: 1,
-        name: "MemWINV",
-        is_reserved: false,
-    },
-    // VGA Palette Snoop
-    BitVecFieldDescriptor {
-        len: 1,
-        name: "VGASnoop",
-        is_reserved: false,
-    },
-    // Parity Error Response
-    BitVecFieldDescriptor {
-        len: 1,
-        name: "ParErr",
-        is_reserved: false,
-    },
-    BitVecFieldDescriptor {
-        len: 1,
+        len: 3,
         name: "Reserved 1",
         is_reserved: true,
     },
-    // SERR# Enable
+    // Interrupt status
     BitVecFieldDescriptor {
         len: 1,
-        name: "SERR",
+        name: "INTx",
         is_reserved: false,
     },
-    // Fast Back-to-Back Enable
+    // Capabilities List
+    BitVecFieldDescriptor {
+        len: 1,
+        name: "Cap",
+        is_reserved: false,
+    },
+    // 66 MHz Capable
+    BitVecFieldDescriptor {
+        len: 1,
+        name: "66MHz",
+        is_reserved: false,
+    },
+    // Reserved
+    BitVecFieldDescriptor {
+        len: 1,
+        name: "Reserved 2",
+        is_reserved: true,
+    },
+    // Fast Back-to-Back Capable
     BitVecFieldDescriptor {
         len: 1,
         name: "FastB2B",
         is_reserved: false,
     },
-    // Interrupt Disable
+    // Master Data Parity Error
     BitVecFieldDescriptor {
         len: 1,
-        name: "DisINTx",
+        name: "MasterDataParErr",
         is_reserved: false,
     },
+    // DEVSEL Timing
     BitVecFieldDescriptor {
-        len: 4,
-        name: "Reserved 2",
-        is_reserved: true,
+        len: 1,
+        name: "DEVSEL",
+        is_reserved: false,
+    },
+    // Signaled Target Abort
+    BitVecFieldDescriptor {
+        len: 1,
+        name: "SigTAbrt",
+        is_reserved: false,
+    },
+    // Received Target Abort
+    BitVecFieldDescriptor {
+        len: 1,
+        name: "RecvTAbrt",
+        is_reserved: false,
+    },
+    // Received Master Abort
+    BitVecFieldDescriptor {
+        len: 1,
+        name: "RecvMAbrt",
+        is_reserved: false,
+    },
+    // Signaled System Error
+    BitVecFieldDescriptor {
+        len: 1,
+        name: "SigSysErr",
+        is_reserved: false,
+    },
+    // Detected Parity Error
+    BitVecFieldDescriptor {
+        len: 1,
+        name: "ParErr",
+        is_reserved: false,
     },
 ];
 
-pub struct CommandRegister {
+pub struct StatusRegister {
     vector: u16,
 }
 
-impl From<u16> for CommandRegister {
+impl From<u16> for StatusRegister {
     fn from(value: u16) -> Self {
         Self { vector: value }
     }
 }
 
-pub struct CommandPrettyPrinter {}
+pub struct StatusPrettyPrinter {}
 
-impl CommandPrettyPrinter {
+impl StatusPrettyPrinter {
     pub fn new() -> Self {
         Self {}
     }
 
-    pub fn print(&self, cmd: &CommandRegister) -> String {
+    pub fn print(&self, cmd: &StatusRegister) -> String {
         let mut offset = 0;
         let mut fields_enabled: Vec<String> = vec![];
         let mut fields_disabled: Vec<String> = vec![];
 
-        for desc in COMMAND_FIELDS {
+        for desc in STATUS_FIELDS {
             let enabled = (cmd.vector >> offset) & 0x1;
 
             if desc.is_reserved {

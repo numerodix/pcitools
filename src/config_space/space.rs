@@ -4,11 +4,15 @@ use alloc::{format, vec};
 use alloc::{string::String, vec::Vec};
 
 use crate::config_space::command::CommandPrettyPrinter;
+use crate::config_space::header_type::{HeaderTypePrettyPrinter, HeaderTypeRegister};
+use crate::config_space::status::{StatusPrettyPrinter, StatusRegister};
 use crate::config_space::CommandRegister;
 
 enum FieldKind {
     BitField,
     CommandRegister,
+    StatusRegister,
+    HeaderTypeRegister,
     AddressField,
     IntField,
     IdField,
@@ -39,7 +43,7 @@ const HeaderType00: [FieldDescriptor; 12] = [
     FieldDescriptor {
         len: 2,
         name: "status",
-        kind: FieldKind::BitField,
+        kind: FieldKind::StatusRegister,
     },
     FieldDescriptor {
         len: 1,
@@ -74,7 +78,7 @@ const HeaderType00: [FieldDescriptor; 12] = [
     FieldDescriptor {
         len: 1,
         name: "header_type",
-        kind: FieldKind::AddressField,
+        kind: FieldKind::HeaderTypeRegister,
     },
     FieldDescriptor {
         len: 1,
@@ -187,6 +191,20 @@ impl ConfigSpacePrettyPrinter {
                 let printer = CommandPrettyPrinter::new();
                 let flags = printer.print(&reg);
                 format!("{} [0x{:04x}]", flags, value)
+            }
+            FieldKind::StatusRegister => {
+                let value = self.assemble_u16(slice);
+                let reg = StatusRegister::from(value as u16);
+                let printer = StatusPrettyPrinter::new();
+                let flags = printer.print(&reg);
+                format!("{} [0x{:04x}]", flags, value)
+            }
+            FieldKind::HeaderTypeRegister => {
+                let value = slice[0];
+                let reg = HeaderTypeRegister::from(value);
+                let printer = HeaderTypePrettyPrinter::new();
+                let flags = printer.print(&reg);
+                format!("{} [0x{:02x}]", flags, value)
             }
             _ => match desc.len {
                 1 => {
