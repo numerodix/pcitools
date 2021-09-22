@@ -7,8 +7,10 @@ use crate::config_space::command::CommandPrettyPrinter;
 use crate::config_space::header_type::{HeaderTypePrettyPrinter, HeaderTypeRegister};
 use crate::config_space::status::{StatusPrettyPrinter, StatusRegister};
 use crate::config_space::CommandRegister;
+use crate::config_space::vendors::VENDOR_MAP;
 
 enum FieldKind {
+    VendorField,
     BitField,
     CommandRegister,
     StatusRegister,
@@ -28,7 +30,7 @@ const HeaderType00: [FieldDescriptor; 12] = [
     FieldDescriptor {
         len: 2,
         name: "vendor_id",
-        kind: FieldKind::IdField,
+        kind: FieldKind::VendorField,
     },
     FieldDescriptor {
         len: 2,
@@ -185,6 +187,14 @@ impl ConfigSpacePrettyPrinter {
 
     fn print_value(&self, desc: &FieldDescriptor, slice: &[u8]) -> String {
         match desc.kind {
+            FieldKind::VendorField => {
+                let id = self.assemble_u16(slice);
+                let name = VENDOR_MAP.get(&id);
+                match name {
+                    Some(name) => format!("{} [0x{:04x}]", name, id),
+                    None => format!("[0x{:04x}]", id),
+                }
+            }
             FieldKind::CommandRegister => {
                 let value = self.assemble_u16(slice);
                 let reg = CommandRegister::from(value as u16);

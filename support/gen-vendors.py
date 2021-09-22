@@ -20,16 +20,15 @@ def main(id_file, tmpl_file):
         content = outfile.read()
 
     indent = '        '
-    lines = [
-        f'{indent}// START',
-        f'{indent}// END',
-    ]
+    lines = []
     for id, name in pairs:
-        line = f'{indent}({id}, "{name}"),'
-        lines.insert(1, line)
+        name = name.replace('"', '\\"')
+        line = f'{indent}(0x{id}, "{name}"),'
+        lines.append(line)
 
+    lines = [f'{indent}// START'] + lines + [f'{indent}// END']
     block = '\n'.join(lines)
-    content = re.sub(f'{indent}// START.*{indent}// END', block)
+    content = re.sub(f'(?ms){indent}// START.*{indent}// END', block, content)
 
     with open(tmpl_file, 'w') as outfile:
         outfile.write(content)
