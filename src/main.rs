@@ -2,9 +2,9 @@ use std::fs;
 use std::path;
 use std::u8;
 
-use lspci::Address;
-use lspci::ConfigSpace;
-use lspci::ConfigSpacePrettyPrinter;
+use pcitools::Address;
+use pcitools::ConfigSpace;
+use pcitools::ConfigSpacePrettyPrinter;
 
 struct Scanner {
     root_dir: String,
